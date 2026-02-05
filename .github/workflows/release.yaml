@@ -20,3 +20,5 @@ jobs:
 
       - name: Upload binary
         run: gh release upload $GITHUB_REF ./build/twd
+        env:
+          GH_TOKEN: ${{ github.token }}
