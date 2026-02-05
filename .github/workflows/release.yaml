@@ -18,6 +18,8 @@ jobs:
       - name: Build binary
         run: CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o ./build/ ./cmd/twd
 
+      - run: echo "uploading to release $GITHUB_REF"
+
       - name: Upload binary
         run: gh release upload $GITHUB_REF ./build/twd
         env:
