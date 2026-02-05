@@ -1,0 +1,22 @@
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  build:
+    name: Build and upload binary
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+
+      - name: Build binary
+        run: CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o ./build ./cmd/twd
+
+      - name: Upload binary
+        run: gh release upload $GITHUB_REF ./build/twd
