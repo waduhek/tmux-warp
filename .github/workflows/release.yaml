@@ -8,6 +8,9 @@ jobs:
     name: Build and upload binary
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
       - uses: actions/checkout@v6
 
@@ -16,9 +19,7 @@ jobs:
           go-version: stable
 
       - name: Build binary
-        run: CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o ./build/ ./cmd/twd
-
-      - run: echo "uploading to release ${{ github.event.release.tag_name }}"
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags '-extldflags "-static"' -o ./build/ ./cmd/twd
 
       - name: Upload binary
         run: gh release upload ${{ github.event.release.tag_name }} ./build/twd
