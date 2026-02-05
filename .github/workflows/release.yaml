@@ -16,7 +16,7 @@ jobs:
           go-version: stable
 
       - name: Build binary
-        run: CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o ./build ./cmd/twd
+        run: CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o ./build/ ./cmd/twd
 
       - name: Upload binary
         run: gh release upload $GITHUB_REF ./build/twd
