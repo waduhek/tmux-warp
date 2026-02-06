@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -16,6 +17,10 @@ var ErrInvalidLineFormat = errors.New("invalid line format")
 // ErrContextDone is returned when the provided context is closed while parsing
 // the file.
 var ErrContextDone = errors.New("context was closed while parsing file")
+
+// ErrHomeEnvNotSet is returned when attempting to expand a path aliased to the
+// home directory and the value of HOME was not found/set.
+var ErrHomeEnvNotSet = errors.New("value of environment variable HOME not set")
 
 // ParserOutput represents a parsed row from the config file.
 type ParserOutput struct {
@@ -67,10 +72,9 @@ func (p *parser) ParseWarpRC(
 func (p *parser) getFileHandler(path string) (*os.File, *ParserResult) {
 	file, err := os.Open(path)
 	if err != nil {
-		result := &ParserResult{
-			Output: nil,
-			Error:  fmt.Errorf("error while opening file for parsing: %w", err),
-		}
+		result := p.buildErrorResult(
+			fmt.Errorf("error while opening file for parsing: %w", err),
+		)
 
 		return nil, result
 	}
@@ -86,12 +90,9 @@ func (p *parser) scanAndParse(
 	for scanner.Scan() {
 		select {
 		case <-ctx.Done():
-			result := ParserResult{
-				Output: nil,
-				Error:  ErrContextDone,
-			}
+			result := p.buildErrorResult(ErrContextDone)
 
-			ch <- result
+			ch <- *result
 			return
 
 		default:
@@ -104,21 +105,55 @@ func (p *parser) scanAndParse(
 func (p *parser) parseLine(line string, ch chan<- ParserResult) {
 	lineParts := strings.Split(line, ":")
 
-	var result ParserResult
 	if len(lineParts) != 2 {
-		result = ParserResult{
-			Output: nil,
-			Error:  ErrInvalidLineFormat,
-		}
-	} else {
-		result = ParserResult{
-			Output: &ParserOutput{
-				Name: lineParts[0],
-				Path: lineParts[1],
-			},
-			Error: nil,
-		}
+		result := p.buildErrorResult(ErrInvalidLineFormat)
+
+		ch <- *result
+		return
 	}
 
-	ch <- result
+	name := lineParts[0]
+	path := lineParts[1]
+
+	result := p.expandPathIfRequired(name, path)
+	ch <- *result
+}
+
+func (p *parser) expandPathIfRequired(name, path string) *ParserResult {
+	if path[0] == '~' {
+		expandedPath, err := p.expandHomeAlias(path)
+		if err != nil {
+			return p.buildErrorResult(err)
+		}
+
+		return p.buildResult(name, expandedPath)
+	}
+
+	return p.buildResult(name, path)
+}
+
+func (p *parser) expandHomeAlias(path string) (string, error) {
+	homeEnv := os.Getenv("HOME")
+	if homeEnv == "" {
+		return "", ErrHomeEnvNotSet
+	}
+
+	return filepath.Join(homeEnv, path[1:]), nil
+}
+
+func (p *parser) buildResult(name, path string) *ParserResult {
+	return &ParserResult{
+		Output: &ParserOutput{
+			Name: name,
+			Path: path,
+		},
+		Error: nil,
+	}
+}
+
+func (p *parser) buildErrorResult(err error) *ParserResult {
+	return &ParserResult{
+		Output: nil,
+		Error:  err,
+	}
 }
