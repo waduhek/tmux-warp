@@ -109,3 +109,29 @@ func TestParseWarpRC_ContextCancellation(t *testing.T) {
 		}
 	}
 }
+
+func TestParseWarpRC_TildePath(t *testing.T) {
+	testFile := filepath.Join("testdata", "parse_tilde.txt")
+	destFile := filepath.Join(t.TempDir(), "parse_tilde.txt")
+
+	homePath := "/home/user"
+	t.Setenv("HOME", homePath)
+
+	if err := testutils.CopyFile(testFile, destFile); err != nil {
+		t.Fatalf("error while copying test file: %s", err)
+	}
+
+	resultChan := make(chan parser.ParserResult)
+	go p.ParseWarpRC(ctx, destFile, resultChan)
+
+	result := <-resultChan
+
+	if result.Error != nil {
+		t.Fatalf("error while parsing file: %s", result.Error)
+	}
+
+	expectedPath := filepath.Join(homePath, "path", "to", "warp1")
+	if result.Output.Path != expectedPath {
+		t.Fatalf("expected path %s but got %s", expectedPath, result.Output.Path)
+	}
+}
