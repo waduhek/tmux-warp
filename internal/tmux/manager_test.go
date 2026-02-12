@@ -19,6 +19,10 @@ func (c *inTmuxSessionCommands) IsInTmuxSession() bool {
 	return true
 }
 
+func (c *inTmuxSessionCommands) HasSession(name string) bool {
+	return false
+}
+
 func (c *inTmuxSessionCommands) CreateSession(name, path string) error {
 	return nil
 }
@@ -40,6 +44,10 @@ func (c *outsideTmuxSessionCommands) IsInTmuxSession() bool {
 	return false
 }
 
+func (c *outsideTmuxSessionCommands) HasSession(name string) bool {
+	return false
+}
+
 func (c *outsideTmuxSessionCommands) CreateSession(name, path string) error {
 	return nil
 }
@@ -54,6 +62,31 @@ func (c *outsideTmuxSessionCommands) SwitchClient(name string) error {
 
 // ---
 
+type sessionExistsCommands struct {
+}
+
+func (c *sessionExistsCommands) IsInTmuxSession() bool {
+	return true
+}
+
+func (c *sessionExistsCommands) HasSession(name string) bool {
+	return true
+}
+
+func (c *sessionExistsCommands) CreateSession(name, path string) error {
+	return errors.New("create session should not be called")
+}
+
+func (c *sessionExistsCommands) AttachSession(name string) error {
+	return errors.New("attach session should not be called")
+}
+
+func (c *sessionExistsCommands) SwitchClient(name string) error {
+	return nil
+}
+
+// ---
+
 var testCases = []testCase{
 	{
 		name:     "inside_tmux_session",
@@ -62,6 +95,10 @@ var testCases = []testCase{
 	{
 		name:     "outside_tmux_session",
 		commands: &outsideTmuxSessionCommands{},
+	},
+	{
+		name:     "session_exists",
+		commands: &sessionExistsCommands{},
 	},
 }
 
