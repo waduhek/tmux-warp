@@ -18,9 +18,11 @@ func NewTmuxManager(commands TmuxCommands) *tmuxManager {
 }
 
 func (m *tmuxManager) CreateSessionAndSwitch(name, path string) error {
-	err := m.commands.CreateSession(name, path)
-	if err != nil {
-		return err
+	if !m.commands.HasSession(name) {
+		err := m.commands.CreateSession(name, path)
+		if err != nil {
+			return err
+		}
 	}
 
 	if m.commands.IsInTmuxSession() {

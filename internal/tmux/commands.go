@@ -9,6 +9,9 @@ type TmuxCommands interface {
 	// IsInTmuxSession checks if the command has been run inside a tmux session.
 	IsInTmuxSession() bool
 
+	// HasSession checks if the provided session name exists.
+	HasSession(name string) bool
+
 	// CreateSession creates a new tmux session with the provided name and
 	// initialises the session path to the provided value.
 	CreateSession(name, path string) error
@@ -76,4 +79,9 @@ func (t *tmuxCommands) AttachSession(name string) error {
 
 	err = cmd.Wait()
 	return err
+}
+
+func (t *tmuxCommands) HasSession(name string) bool {
+	err := exec.Command("tmux", "has-session", "-t", name).Run()
+	return err == nil
 }
